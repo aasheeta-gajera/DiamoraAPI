@@ -1,0 +1,30 @@
+in purchase api how totle price calculate 
+1️⃣Cost Per Carat Calculation
+Formula:
+
+Cost Per Carat = Purchase Price / Size (Weight in Carats)
+ 
+Given Data:
+
+Purchase Price = $4800 (per diamond)
+Size = 1.8 carats
+Cost Per Carat = 4800/  1.8 = 2666.67
+
+So, the Cost Per Carat is $2666.67.
+
+2️⃣ Total Purchase Price Calculation
+Formula:
+
+Total Purchase Price = Purchase Price * Total Diamonds
+
+Purchase Price (per diamond) = $4800
+Total Diamonds = 40
+Total Purchase Price = 4800 * 40 = 192000
+
+So, the Total Purchase Price is $192,000.
+
+📌 Summary of Calculations
+Field	Formula / Explanation	Result
+Cost Per Carat	Purchase Price ÷ Size (Carats)	$2666.67
+Total Purchase Price	Purchase Price * Total Diamonds	$192,000
+Table Percentage	Percentage of diamond’s top surface	56%
