@@ -4,6 +4,8 @@ import userAuth from "../Middlewares/auth.js";
 
 const userRouter = express.Router()
 
+//ngrok http 4000
+
 userRouter.post('/register' ,registerUser);
 userRouter.post('/login' ,loginUser);
 userRouter.use('/uploads',uploads);
@@ -11,8 +13,7 @@ userRouter.post('/forgotPassword' ,forgotPassword);
 userRouter.post('/resetPassword' ,resetPassword);
 
 
-userRouter.get('/getUsers' ,getUsers);
-
+userRouter.get('/getUsers',getUsers);
 
 userRouter.post('/purchaseDiamond' ,purchaseDiamond);
 userRouter.get('/getAllPurchasedDiamonds' ,getAllPurchasedDiamonds);

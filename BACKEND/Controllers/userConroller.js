@@ -150,30 +150,30 @@ export const registerUser = async (req, res) => {
   };
   
 
-  export const resetPassword = async (req, res) => {
-    try {
-      const { token, newPassword } = req.body;
-  
-      const decoded = jwt.verify(token, SECRET_KEY);
-      if (!decoded) return res.status(400).json({ message: "Invalid or expired token" });
-  
-      // Find user by email in decoded token
-      const user = await User.findOne({ email: decoded.email });
-      if (!user) return res.status(400).json({ message: "User not found" });
-  
-      // Hash new password
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-  
-      // Update user's password
-      user.password = hashedPassword;
-      await user.save();
-  
-      res.status(200).json({ message: "Password reset successful. You can now log in." });
-  
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  };
+    export const resetPassword = async (req, res) => {
+      try {
+        const { token, newPassword } = req.body;
+    
+        const decoded = jwt.verify(token, SECRET_KEY);
+        if (!decoded) return res.status(400).json({ message: "Invalid or expired token" });
+    
+        // Find user by email in decoded token
+        const user = await User.findOne({ email: decoded.email });
+        if (!user) return res.status(400).json({ message: "User not found" });
+    
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+        // Update user's password
+        user.password = hashedPassword;
+        await user.save();
+    
+        res.status(200).json({ message: "Password reset successful. You can now log in." });
+    
+      } catch (error) {
+        res.status(500).json({ message: error.message });
+      }
+    };
 
   // Admin
 
