@@ -18,8 +18,8 @@ const userSchema = new mongoose.Schema({
     address: { type: String, required: [true, "address is required"] },
     userType: { 
       type: String, 
-      required: [true, "User type is required"], 
-      enum: ["admin", "customer"] // Only allow these two values
+      enum: ["admin", "customer"], // Only allow "admin" or "customer"
+      default: "customer"
     },
     contact_name: { type: String, required: [true, "contact_name is required"] },
     id_proof: { type: String, required: [true, "id_proof is required"] },

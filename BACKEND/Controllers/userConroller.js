@@ -36,7 +36,7 @@ export const registerUser = async (req, res) => {
         return filePath;
       };
 
-      const idProofPath = saveBase64Image(id_proof, "id_proof");
+    const idProofPath = saveBase64Image(id_proof, "id_proof");
     const licenseCopyPath = saveBase64Image(license_copy, "license_copy");
     const taxCertPath = saveBase64Image(tax_certificate, "tax_certificate");
     const partnerCopyPath = saveBase64Image(partner_copy, "partner_copy");
@@ -208,10 +208,11 @@ export const registerUser = async (req, res) => {
       } = req.body;
   
       // Check if diamond already exists
-      const existingDiamond = await PurchaseDiamond.findOne({ itemCode, status: "In Stock" });
-      if (existingDiamond) {
-        return res.status(400).json({ message: "Diamond already in stock" });
-      }
+      
+      // const existingDiamond = await PurchaseDiamond.findOne({ itemCode, status: "In Stock" });
+      // if (existingDiamond) {
+      //   return res.status(400).json({ message: "Diamond already in stock" });
+      // }
   
       // Calculate total purchase price
       const totalPurchasePrice = purchasePrice * totalDiamonds;
