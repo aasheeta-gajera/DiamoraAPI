@@ -261,6 +261,8 @@ export const registerUser = async (req, res) => {
       const purchasePrice = calculateDiamondPrice(shape, color, clarity, weightCarat);
       const totalPurchasePrice = purchasePrice * totalDiamonds;
       const costPerCarat = purchasePrice / weightCarat;
+
+      const stockStatus = totalDiamonds > 0 ? "In Stock" : "Out of Stock";
   
       // Save the purchase
       const newPurchase = new PurchaseDiamond({
@@ -287,15 +289,15 @@ export const registerUser = async (req, res) => {
         totalPurchasePrice,
         invoiceNumber,
         purchaseDate: purchaseDate || new Date(),
-        status: "In Stock",
+        status: stockStatus,
         storageLocation,
         pairingAvailable,
         imageURL,
-        remarks
+        remarks,
       });
   
       await newPurchase.save();
-      res.status(201).json({ message: "Diamond added to inventory!", purchase: newPurchase ,totalPurchasePrice});
+      res.status(201).json({ message: "Diamond added to inventory!", purchase: newPurchase});
   
     } catch (error) {
       res.status(500).json({ message: error.message });
@@ -305,8 +307,12 @@ export const registerUser = async (req, res) => {
 
   export const getAllPurchasedDiamonds = async (req, res) => {
     try {
-      const diamonds = await PurchaseDiamond.find(); 
-      res.status(200).json({ diamonds });
+      const diamonds = await PurchaseDiamond.find();
+       const diamondsWithTotalPrice = diamonds.map(diamond => ({
+            ...diamond.toObject(), 
+            totalPurchasePrice: diamond.purchasePrice * diamond.totalDiamonds
+        })); 
+      res.status(200).json({ diamonds:diamondsWithTotalPrice });
     } catch (error) {
       res.status(500).json({ message: error.message });
     }

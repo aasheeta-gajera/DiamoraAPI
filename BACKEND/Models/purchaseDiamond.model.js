@@ -53,13 +53,17 @@ const PurchaseDiamondSchema = new mongoose.Schema({
     storageLocation: { type: String }, // New field
     pairingAvailable: { type: Boolean, default: false }, // New field
     imageURL: { type: String }, // New field
-    remarks: { type: String } // New field
+    remarks: { type: String } ,// New field
+    totalPurchasePrice: { type: Number }, // ✅ Add this field
 });
 
 // Auto-calculate cost per carat before saving
 PurchaseDiamondSchema.pre("save", function (next) {
     if (this.weightCarat && this.purchasePrice) {
         this.costPerCarat = this.purchasePrice / this.weightCarat;
+    }
+    if (this.purchasePrice && this.totalDiamonds) {
+        this.totalPurchasePrice = this.purchasePrice * this.totalDiamonds;
     }
     next();
 });
