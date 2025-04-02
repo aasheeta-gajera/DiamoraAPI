@@ -1,5 +1,5 @@
 import express from "express";
-import { registerUser, loginUser,getUsers,uploads ,forgotPassword,getSalesReport,getAllSuppliers,supplier ,resetPassword,getAllPurchasedDiamonds,purchaseDiamond,sellDiamond} from "../Controllers/userController.js";
+import { registerUser, AddToCart,loginUser,getUsers,uploads ,forgotPassword,getSalesReport,getAllSuppliers,supplier ,resetPassword,getAllPurchasedDiamonds,purchaseDiamond,sellDiamond} from "../Controllers/userController.js";
 import userAuth from "../Middlewares/auth.js";
 
 const userRouter = express.Router()
@@ -19,8 +19,12 @@ userRouter.get('/getAllSuppliers',getAllSuppliers);
 userRouter.post('/purchaseDiamond' ,purchaseDiamond);
 userRouter.get('/getAllPurchasedDiamonds' ,getAllPurchasedDiamonds);
 
+userRouter.get('/addtocart' ,AddToCart);
+
 userRouter.post('/sellDiamond' ,sellDiamond);
 userRouter.get('/getSalesReport' ,getSalesReport);
+
+
 
 export default userRouter;
 

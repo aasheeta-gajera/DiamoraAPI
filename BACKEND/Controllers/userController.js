@@ -16,7 +16,7 @@ const __dirname = path.dirname(__filename);
 
 export const registerUser = async (req, res) => {
     try {
-      const { user_id, password, email, mobile, city,address,userType, contact_name, references, id_proof,  license_copy, tax_certificate, partner_copy } = req.body;
+      const { user_id, password, email, mobile, city,address,userType, contact_name, references, id_proof,  license_copy, tax_certificate, partner_copy,terms_agreed,business_type } = req.body;
   
       const existingUser = await User.findOne({ email });
       if (existingUser) return res.status(400).json({ message: "User already exists" });
@@ -68,6 +68,8 @@ export const registerUser = async (req, res) => {
         license_copy: licenseCopyPath,
         tax_certificate: taxCertPath,
         partner_copy: partnerCopyPath,
+        terms_agreed,
+        business_type,
         references: parsedReferences
       });
   
@@ -459,5 +461,42 @@ export const getAllSuppliers = async (req, res) => {
     res.status(200).json({ success: true, data: suppliers });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+
+
+export const AddToCart =  async (req, res) => {
+  try {
+    const { userId, diamondId, quantity } = req.body;
+
+   if (!userId || !diamondId || quantity <= 0) {
+      return res.status(400).json({ message: "Invalid data provided" });
+    }
+
+    const diamond = await Diamond.findById(diamondId);
+    if (!diamond) {
+      return res.status(404).json({ message: "Diamond not found" });
+    }
+
+    let cartItem = await Cart.findOne({ userId, diamondId });
+
+    if (cartItem) {
+      cartItem.quantity += quantity;
+    } else {
+      cartItem = new Cart({
+        userId,
+        diamondId,
+        quantity,
+        price: diamond.price, 
+      });
+    }
+
+    // Save cart
+    await cartItem.save();
+
+    res.status(200).json({ message: "Diamond added to cart", cart: cartItem });
+  } catch (error) {
+    res.status(500).json({ message: "Server error: " + error.message });
   }
 };
