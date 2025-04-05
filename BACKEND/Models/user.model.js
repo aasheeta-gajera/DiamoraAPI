@@ -34,7 +34,7 @@ const userSchema = new mongoose.Schema({
       }
     ],
     business_type: { type: [String], default: [] },
-  terms_agreed: { type: Boolean, required: true }
+  terms_agreed: { type: Boolean }
   });
   
 

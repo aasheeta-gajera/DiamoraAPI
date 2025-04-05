@@ -1,12 +1,13 @@
 import User from "../Models/user.model.js";
 import PurchaseDiamond from "../Models/purchaseDiamond.model.js";
-import Diamond from '../Models/Diamond.model.js'
 import bcrypt from 'bcrypt';
 import jwt from "jsonwebtoken";
 import { fileURLToPath } from 'url';
 import path from "path";
 import express from "express";
 import { writeFileSync } from "fs";
+import Cart from "../Models/Cart.model.js";
+import Diamond from "../Models/Diamond.model.js";
 import Supplier from "../Models/supplier.model.js";
 
 const SECRET_KEY = "aasheeta#p"; 
@@ -195,7 +196,7 @@ export const registerUser = async (req, res) => {
       "Radiant": 5700, "Asscher": 5600, "Mitchell": 4900, "Other": 4500
     },
     clarity: {
-      "FL": 2.0, "IF": 1.8, "VVS1": 1.6, "VVS2": 1.5,
+      "FL": 2.0, "IF": 1.8, "VVS1": 1.6, "VVS2": 1.5,   
       "VS1": 1.4, "VS2": 1.3, "SI1": 1.2, "SI2": 1.1,
       "I1": 1.0, "I2": 0.9, "I3": 0.8
     },
@@ -464,35 +465,33 @@ export const getAllSuppliers = async (req, res) => {
   }
 };
 
-
-
-export const AddToCart =  async (req, res) => {
+export const AddToCart = async (req, res) => {
   try {
-    const { userId, diamondId, quantity } = req.body;
+    const { userId, itemCode, quantity } = req.body;
 
-   if (!userId || !diamondId || quantity <= 0) {
+    if (!userId || !itemCode || quantity <= 0) {
       return res.status(400).json({ message: "Invalid data provided" });
     }
 
-    const diamond = await Diamond.findById(diamondId);
+    const diamond = await PurchaseDiamond.findOne({ itemCode });
+    console.log(diamond);
     if (!diamond) {
       return res.status(404).json({ message: "Diamond not found" });
     }
 
-    let cartItem = await Cart.findOne({ userId, diamondId });
+    let cartItem = await Cart.findOne({ userId, itemCode });
 
     if (cartItem) {
       cartItem.quantity += quantity;
     } else {
       cartItem = new Cart({
         userId,
-        diamondId,
+        itemCode,
         quantity,
-        price: diamond.price, 
+        price: diamond.purchasePrice || 0,
       });
     }
 
-    // Save cart
     await cartItem.save();
 
     res.status(200).json({ message: "Diamond added to cart", cart: cartItem });
