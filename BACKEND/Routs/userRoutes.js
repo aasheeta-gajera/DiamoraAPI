@@ -5,6 +5,7 @@
 // const userRouter = express.Router()
 
 // //ngrok http 5000
+//http://localhost:5000/api-docs
 
 // userRouter.post('/register' ,registerUser);
 // userRouter.post('/login' ,loginUser);
@@ -33,7 +34,7 @@
 
 
 import express from "express";
-import { registerUser, AddToCart, loginUser, getUsers, uploads, forgotPassword, getSalesReport, getAllSuppliers, supplier, resetPassword, getAllPurchasedDiamonds, purchaseDiamond, sellDiamond } from "../Controllers/userController.js";
+import { registerUser,getAllCartItems, AddToCart, loginUser, getUsers, uploads, forgotPassword, getSalesReport, getAllSuppliers, supplier, resetPassword, getAllPurchasedDiamonds, purchaseDiamond, sellDiamond } from "../Controllers/userController.js";
 import userAuth from "../Middlewares/auth.js";
 
 const userRouter = express.Router();
@@ -339,5 +340,7 @@ userRouter.post('/sellDiamond', sellDiamond);
  *     tags: [User]
  */
 userRouter.get('/getSalesReport', getSalesReport);
+
+userRouter.get("/cartDiamonds", getAllCartItems); 
 
 export default userRouter;

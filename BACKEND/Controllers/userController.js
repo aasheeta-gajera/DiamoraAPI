@@ -474,11 +474,17 @@ export const AddToCart = async (req, res) => {
     }
 
     const diamond = await PurchaseDiamond.findOne({ itemCode });
-    console.log(diamond);
+
     if (!diamond) {
       return res.status(404).json({ message: "Diamond not found" });
     }
 
+    // Check if enough stock is available
+    if (diamond.totalDiamonds < quantity) {
+      return res.status(400).json({ message: "Insufficient stock available" });
+    }
+
+    // Update or create cart item
     let cartItem = await Cart.findOne({ userId, itemCode });
 
     if (cartItem) {
@@ -492,10 +498,34 @@ export const AddToCart = async (req, res) => {
       });
     }
 
-    await cartItem.save();
+    // Decrease totalDiamonds in inventory
+    diamond.totalDiamonds -= quantity;
+
+    console.log(diamond.totalDiamonds);
+    // If totalDiamonds is now 0, update status
+    if (diamond.totalDiamonds === 0) {
+      diamond.status = "Out of Stock";
+    }
+
+    await Promise.all([cartItem.save(), diamond.save()]);
 
     res.status(200).json({ message: "Diamond added to cart", cart: cartItem });
   } catch (error) {
     res.status(500).json({ message: "Server error: " + error.message });
   }
 };
+
+
+  export const getAllCartItems = async (req, res) => {
+    try {
+      const cartItems = await Cart.find().populate("userId", "name email");
+
+      if (cartItems.length === 0) {
+        return res.status(404).json({ message: "No items found in the cart" });
+      }
+
+      res.status(200).json({ cartItems });
+    } catch (error) {
+      res.status(500).json({ message: "Server error: " + error.message });
+    }
+  };
