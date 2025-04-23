@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
 const PurchaseDiamondSchema = new mongoose.Schema({
-    supplier: { type: mongoose.Schema.Types.ObjectId, ref: "Supplier" },
-    invoiceNumber: { type: String, required: true, unique: true },
+    supplier: { type: String , ref: "Supplier" },
+    invoiceNumber: { type: String, required: true},
     supplierContact: { type: String }, // New field
     itemCode: { type: String, required: true, unique: true },
     lotNumber: { type: String, unique: true }, // New field

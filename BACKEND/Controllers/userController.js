@@ -7,7 +7,7 @@ import path from "path";
 import express from "express";
 import { writeFileSync } from "fs";
 import Cart from "../Models/Cart.model.js";
-import Diamond from "../Models/Diamond.model.js";
+// import Diamond from "../Models/Diamond.model.js";
 import Supplier from "../Models/supplier.model.js";
 
 const SECRET_KEY = "aasheeta#p"; 
@@ -501,7 +501,6 @@ export const AddToCart = async (req, res) => {
     // Decrease totalDiamonds in inventory
     diamond.totalDiamonds -= quantity;
 
-    console.log(diamond.totalDiamonds);
     // If totalDiamonds is now 0, update status
     if (diamond.totalDiamonds === 0) {
       diamond.status = "Out of Stock";
@@ -509,23 +508,81 @@ export const AddToCart = async (req, res) => {
 
     await Promise.all([cartItem.save(), diamond.save()]);
 
-    res.status(200).json({ message: "Diamond added to cart", cart: cartItem });
+    // Return full details of the diamond
+    const diamondDetails = {
+      itemCode: diamond.itemCode,
+      shape: diamond.shape,
+      size: diamond.size,
+      weightCarat: diamond.weightCarat,
+      color: diamond.color,
+      clarity: diamond.clarity,
+      cut: diamond.cut,
+      polish: diamond.polish,
+      symmetry: diamond.symmetry,
+      fluorescence: diamond.fluorescence,
+      certification: diamond.certification,
+      measurements: diamond.measurements,
+      tablePercentage: diamond.tablePercentage,
+      purchasePrice: diamond.purchasePrice,
+      totalDiamonds: diamond.totalDiamonds,
+      invoiceNumber: diamond.invoiceNumber,
+      purchaseDate: diamond.purchaseDate,
+      status: diamond.status,
+      storageLocation: diamond.storageLocation,
+      pairingAvailable: diamond.pairingAvailable,
+      imageURL: diamond.imageURL,
+      remarks: diamond.remarks,
+      totalPurchasePrice: diamond.totalPurchasePrice,
+    };
+
+    res.status(200).json({
+      message: "Diamond added to cart",
+      cart: cartItem,
+      diamond: diamondDetails,  // Send the full diamond details
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error: " + error.message });
   }
 };
 
 
-  export const getAllCartItems = async (req, res) => {
-    try {
-      const cartItems = await Cart.find().populate("userId", "name email");
+export const getAllCartItems = async (req, res) => {
+  try {
+    const cartItems = await Cart.find().lean(); // lean() makes plain JS object
 
-      if (cartItems.length === 0) {
-        return res.status(404).json({ message: "No items found in the cart" });
-      }
-
-      res.status(200).json({ cartItems });
-    } catch (error) {
-      res.status(500).json({ message: "Server error: " + error.message });
+    if (cartItems.length === 0) {
+      return res.status(404).json({ message: "No items found in the cart" });
     }
-  };
+
+    // Replace itemCode with diamond details
+    const enrichedCart = await Promise.all(
+      cartItems.map(async (item) => {
+        const diamond = await PurchaseDiamond.findOne({ itemCode: item.itemCode }).lean();
+        return {
+          ...item,
+          diamondDetails: diamond || null, // attach full diamond details
+        };
+      })
+    );
+
+    res.status(200).json({ cartItems: enrichedCart });
+  } catch (error) {
+    res.status(500).json({ message: "Server error: " + error.message });
+  }
+};
+
+export const removeCard = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const deletedItem = await Cart.findByIdAndDelete(id);
+
+    if (!deletedItem) {
+      return res.status(404).json({ message: "Diamond not found in cart" });
+    }
+
+    res.status(200).json({ message: "Diamond removed from cart successfully", deletedItem });
+  } catch (error) {
+    res.status(500).json({ message: "Error removing diamond from cart", error: error.message });
+  }
+};

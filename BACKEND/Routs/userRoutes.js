@@ -34,7 +34,7 @@
 
 
 import express from "express";
-import { registerUser,getAllCartItems, AddToCart, loginUser, getUsers, uploads, forgotPassword, getSalesReport, getAllSuppliers, supplier, resetPassword, getAllPurchasedDiamonds, purchaseDiamond, sellDiamond } from "../Controllers/userController.js";
+import { registerUser,removeCard,getAllCartItems, AddToCart, loginUser, getUsers, uploads, forgotPassword, getSalesReport, getAllSuppliers, supplier, resetPassword, getAllPurchasedDiamonds, purchaseDiamond, sellDiamond } from "../Controllers/userController.js";
 import userAuth from "../Middlewares/auth.js";
 
 const userRouter = express.Router();
@@ -342,5 +342,7 @@ userRouter.post('/sellDiamond', sellDiamond);
 userRouter.get('/getSalesReport', getSalesReport);
 
 userRouter.get("/cartDiamonds", getAllCartItems); 
+
+userRouter.delete("/cartDiamonds/:id", removeCard); 
 
 export default userRouter;
