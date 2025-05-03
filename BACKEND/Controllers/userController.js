@@ -7,8 +7,9 @@ import path from "path";
 import express from "express";
 import { writeFileSync } from "fs";
 import Cart from "../Models/Cart.model.js";
-// import Diamond from "../Models/Diamond.model.js";
+import Diamond from "../Models/Diamond.model.js";
 import Supplier from "../Models/supplier.model.js";
+import Inquiry from "../Models/Inquiry.model.js";
 
 const SECRET_KEY = "aasheeta#p"; 
 
@@ -92,6 +93,29 @@ export const registerUser = async (req, res) => {
       res.status(500).json({ message: error.message +'Error' });
     }
   };
+
+  const token = jwt.sign(
+    {
+      _id: User._id,         // ✅ Mongoose ObjectId
+      user_id: User.user_id, // optional if you still want it
+      userType: User.userType
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" }
+  );
+
+  export const verifyUser = (req, res, next) => {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ message: "Unauthorized" });
+  
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) return res.status(403).json({ message: "Forbidden" });
+  
+      req.user = decoded; // This will include _id from the JWT payload
+      next();
+    });
+  };
+  
 
   export const getUsers = async (req, res) => {
     try {
@@ -265,6 +289,7 @@ export const registerUser = async (req, res) => {
       const totalPurchasePrice = purchasePrice * totalDiamonds;
       const costPerCarat = purchasePrice / weightCarat;
 
+      console.log("Calculated purchasePrice:", totalDiamonds); // Debugging line
       const stockStatus = totalDiamonds > 0 ? "In Stock" : "Out of Stock";
   
       // Save the purchase
@@ -307,119 +332,135 @@ export const registerUser = async (req, res) => {
     }
   };
   
-
   export const getAllPurchasedDiamonds = async (req, res) => {
     try {
-      const diamonds = await PurchaseDiamond.find();
-       const diamondsWithTotalPrice = diamonds.map(diamond => ({
-            ...diamond.toObject(), 
-            totalPurchasePrice: diamond.purchasePrice * diamond.totalDiamonds
-        })); 
-      res.status(200).json({ diamonds:diamondsWithTotalPrice });
+      const diamonds = await PurchaseDiamond.find({ status: "In Stock" }); // Filter only in-stock diamonds
+      console.log("Calculated purchasePrice:", diamonds.totalDiamonds); 
+      console.log("Diamonds:", diamonds); // Debugging line
+      const diamondsWithTotalPrice = diamonds.map(diamond => ({
+        ...diamond.toObject(),
+        totalPurchasePrice: (diamond.purchasePrice || 0) * (diamond.totalDiamonds || 0), // Handle null or undefined values
+      }));
+      res.status(200).json({ diamonds: diamondsWithTotalPrice });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  };  
+
+  export const sellDiamond = async (req, res) => {
+    try {
+      const { itemCode, customerName, quantity, totlePrice, paymentStatus } = req.body;
+  
+      // Validate totalPrice and quantity are numbers
+      if (isNaN(totlePrice) || isNaN(quantity) || quantity <= 0 || totlePrice <= 0) {
+        return res.status(400).json({ message: "Invalid price or quantity" });
+      }
+  
+      // Find purchased diamond in stock
+      const purchasedDiamond = await PurchaseDiamond.findOne({ itemCode, status: "In Stock" });
+  
+      if (!purchasedDiamond) {
+        return res.status(404).json({ message: "Diamond not available in inventory" });
+      }
+  
+      if (purchasedDiamond.totalDiamonds < quantity) {
+        return res.status(400).json({ message: "Not enough diamonds in stock" });
+      }
+  
+      // Deduct stock
+      purchasedDiamond.totalDiamonds -= quantity;
+      if (purchasedDiamond.totalDiamonds === 0) {
+        purchasedDiamond.status = "Sold";
+      }
+      await purchasedDiamond.save();
+  
+      // Calculate profit/loss
+      const purchaseCost = purchasedDiamond.purchasePrice * quantity;
+  
+      // Ensure valid numbers for profitOrLossUSD calculation
+      if (isNaN(purchaseCost)) {
+        return res.status(500).json({ message: "Invalid purchase cost" });
+      }
+  
+      const profitOrLossUSD = totlePrice - purchaseCost;
+  
+      // Check if sale already exists for the item
+      const existingSale = await Diamond.findOne({ itemCode });
+  
+      if (existingSale) {
+        // Update existing sale
+        existingSale.quantity += quantity;
+        existingSale.totlePrice += totlePrice;
+        existingSale.profitOrLossUSD += profitOrLossUSD;
+        existingSale.paymentStatus = paymentStatus;
+  
+        await existingSale.save();
+        return res.status(200).json({ message: "Sale updated successfully!", sale: existingSale });
+      }
+  
+      // Create a new sale record
+      const newSale = new Diamond({
+        itemCode,
+        shape: purchasedDiamond.shape,
+        size: purchasedDiamond.size,
+        color: purchasedDiamond.color,
+        clarity: purchasedDiamond.clarity,
+        cut: purchasedDiamond.cut,
+        polish: purchasedDiamond.polish,
+        symmetry: purchasedDiamond.symmetry,
+        fluorescence: purchasedDiamond.fluorescence,
+        certification: purchasedDiamond.certification,
+        measurements: purchasedDiamond.measurements,
+        tablePercentage: purchasedDiamond.tablePercentage,
+        purchasePrice: purchasedDiamond.purchasePrice,
+        totlePrice,
+        customerName,
+        quantity,
+        saleDate: new Date(),
+        paymentStatus,
+        profitOrLossUSD
+      });
+  
+      await newSale.save();
+  
+      // Remove the sold diamond from the cart
+      await Cart.deleteOne({ itemCode });
+  
+      // Return response
+      res.status(201).json({ message: "Diamond sold successfully!", sale: newSale });
+  
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  };  
+
+  export const getSoldDiamonds = async (req, res) => {
+    try {
+      const soldDiamonds = await Diamond.find().sort({ saleDate: -1 }); // Most recent first
+      res.status(200).json({ soldDiamonds });
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
   };
   
-  
-  export const sellDiamond = async (req, res) => {
-    try {
-        const { itemCode, customerName, quantity, sellingPriceUSD, sellingPriceBTC, paymentStatus } = req.body;
-
-        // Find purchased diamond in stock
-        const purchasedDiamond = await PurchaseDiamond.findOne({ itemCode, status: "In Stock" });
-
-        if (!purchasedDiamond) {
-            return res.status(404).json({ message: "Diamond not available in inventory" });
-        }
-
-        if (purchasedDiamond.totalDiamonds < quantity) {
-            return res.status(400).json({ message: "Not enough diamonds in stock" });
-        }
-
-        // Deduct stock
-        purchasedDiamond.totalDiamonds -= quantity;
-        if (purchasedDiamond.totalDiamonds === 0) {
-            purchasedDiamond.status = "Sold";
-        }
-        await purchasedDiamond.save();
-
-        // Calculate total selling price
-        const totalSellingPriceUSD = sellingPriceUSD * quantity;
-        const totalSellingPriceBTC = sellingPriceBTC * quantity;
-
-        // Calculate profit/loss
-        const purchaseCost = purchasedDiamond.purchasePrice * quantity;
-        const profitOrLossUSD = totalSellingPriceUSD - purchaseCost;
-
-        // Check if sale already exists for the item
-        const existingSale = await Diamond.findOne({ itemCode });
-
-        if (existingSale) {
-            // Update existing sale
-            existingSale.quantity += quantity;
-            existingSale.totalSellingPriceUSD += totalSellingPriceUSD;
-            existingSale.totalSellingPriceBTC += totalSellingPriceBTC;
-            existingSale.profitOrLossUSD += profitOrLossUSD;
-            existingSale.paymentStatus = paymentStatus;
-
-            await existingSale.save();
-            return res.status(200).json({ message: "Sale updated successfully!", sale: existingSale });
-        }
-
-        // Create a new sale record
-        const newSale = new Diamond({
-            itemCode,
-            shape: purchasedDiamond.shape,
-            size: purchasedDiamond.size,
-            color: purchasedDiamond.color,
-            clarity: purchasedDiamond.clarity,
-            cut: purchasedDiamond.cut,
-            polish: purchasedDiamond.polish,
-            symmetry: purchasedDiamond.symmetry,
-            fluorescence: purchasedDiamond.fluorescence,
-            certification: purchasedDiamond.certification,
-            measurements: purchasedDiamond.measurements,
-            tablePercentage: purchasedDiamond.tablePercentage,
-            purchasePrice: purchasedDiamond.purchasePrice,
-            sellingPriceUSD,
-            sellingPriceBTC,
-            totalSellingPriceUSD,
-            totalSellingPriceBTC,
-            customerName,
-            quantity,
-            saleDate: new Date(),
-            paymentStatus,
-            profitOrLossUSD
-        });
-
-        await newSale.save();
-        res.status(201).json({ message: "Diamond sold successfully!", sale: newSale });
-
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-
 
 export const getSalesReport = async (req, res) => {
     try {
         const sales = await Diamond.find();
 
         let totalRevenueUSD = 0;
-        let totalRevenueBTC = 0;
+        // let totalRevenueBTC = 0;
         let totalProfitOrLossUSD = 0;
 
         sales.forEach(sale => {
-            totalRevenueUSD += sale.totalSellingPriceUSD;
-            totalRevenueBTC += sale.totalSellingPriceBTC;
+            totalRevenueUSD += sale.totlePrice;
+            // totalRevenueBTC += sale.totalSellingPriceBTC;
             totalProfitOrLossUSD += sale.profitOrLossUSD;
         });
 
         res.status(200).json({
             totalRevenueUSD,
-            totalRevenueBTC,
+            // totalRevenueBTC,
             totalProfitOrLossUSD,
             sales
         });
@@ -501,9 +542,11 @@ export const AddToCart = async (req, res) => {
     // Decrease totalDiamonds in inventory
     diamond.totalDiamonds -= quantity;
 
-    // If totalDiamonds is now 0, update status
+    console.log("Updated totalDiamonds:", diamond.totalDiamonds); // Debugging line
+    // If totalDiamonds is now 0, update status and remove from cart if needed
     if (diamond.totalDiamonds === 0) {
       diamond.status = "Out of Stock";
+      await Cart.deleteOne({ itemCode });  // Remove from the cart if out of stock
     }
 
     await Promise.all([cartItem.save(), diamond.save()]);
@@ -545,7 +588,6 @@ export const AddToCart = async (req, res) => {
   }
 };
 
-
 export const getAllCartItems = async (req, res) => {
   try {
     const cartItems = await Cart.find().lean(); // lean() makes plain JS object
@@ -584,5 +626,96 @@ export const removeCard = async (req, res) => {
     res.status(200).json({ message: "Diamond removed from cart successfully", deletedItem });
   } catch (error) {
     res.status(500).json({ message: "Error removing diamond from cart", error: error.message });
+  }
+};
+
+
+export const createInquiry = async (req, res) => {
+  try {
+    const {
+      userId,
+      subject,
+      message,
+      diamondId,
+      diamondShape,
+      caratWeight,
+      color,
+      clarity,
+      certification
+    } = req.body;
+
+    const inquiry = new Inquiry({
+      userId: userId, 
+      subject,
+      message,
+      diamondId,
+      diamondShape,
+      caratWeight,
+      color,
+      clarity,
+      certification
+    });
+
+    await inquiry.save();
+    res.status(201).json({ message: "Inquiry submitted", inquiry });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getAllInquiries = async (req, res) => {
+  try {
+    const inquiries = await Inquiry.find();
+    res.json(inquiries);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const respondToInquiry = async (req, res) => {
+  try {
+    const inquiry = await Inquiry.findByIdAndUpdate(
+      req.params.id,
+      {
+        response: req.body.response,
+        status: "responded"
+      },
+      { new: true }
+    );
+    if (!inquiry) return res.status(404).json({ message: "Inquiry not found" });
+    res.json({ message: "Response sent", inquiry });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const generateBill = async (req, res) => {
+  try {
+    const { saleId } = req.params;
+
+    const sale = await Diamond.findById(saleId);
+    if (!sale) return res.status(404).json({ message: "Sale not found" });
+
+    const doc = new PDFDocument();
+    const fileName = `invoice_${sale.itemCode}.pdf`;
+    const filePath = `./invoices/${fileName}`;
+
+    doc.pipe(fs.createWriteStream(filePath));
+
+    doc.fontSize(20).text("Diamond Sale Invoice", { align: "center" });
+    doc.moveDown();
+    doc.fontSize(12).text(`Customer Name: ${sale.customerName}`);
+    doc.text(`Item Code: ${sale.itemCode}`);
+    doc.text(`Quantity: ${sale.quantity}`);
+    doc.text(`Total Price: $${sale.totlePrice}`);
+    doc.text(`Payment Status: ${sale.paymentStatus}`);
+    doc.text(`Profit/Loss: $${sale.profitOrLossUSD}`);
+    doc.text(`Sale Date: ${sale.saleDate.toLocaleDateString()}`);
+
+    doc.end();
+
+    res.status(200).json({ message: "Invoice generated", path: `/invoices/${fileName}` });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };

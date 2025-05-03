@@ -4,6 +4,7 @@ import 'dotenv/config'
 import connectDB from './Config/mongodb.js'
 import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
+import path from 'path';
 import userRouter from './Routs/userRoutes.js'
 
 const PORT = process.env.PORT || 4000
@@ -12,6 +13,8 @@ const app = express()
 app.use(express.json({ limit: "50mb" })); 
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 await connectDB()
+
+app.use('/invoices', express.static(path.join(process.cwd(), 'invoices')));
 
 const options = {
     definition: {

@@ -14,6 +14,8 @@
 // userRouter.post('/resetPassword' ,resetPassword);
 // userRouter.post('/supplier' ,supplier);
 
+// most tsruted 
+//
 // userRouter.get('/getUsers',getUsers);
 // userRouter.get('/getAllSuppliers',getAllSuppliers);
 
@@ -28,16 +30,30 @@
 
 // //http://localhost:4000/api/user/login
 // //http://localhost:4000/api/user/register
-// //http://localhost:4000/api/user/credits
-
-
+// //http://localhost:4000/api/user/credits 
 
 
 import express from "express";
-import { registerUser,removeCard,getAllCartItems, AddToCart, loginUser, getUsers, uploads, forgotPassword, getSalesReport, getAllSuppliers, supplier, resetPassword, getAllPurchasedDiamonds, purchaseDiamond, sellDiamond } from "../Controllers/userController.js";
+import { registerUser,generateBill,verifyUser,respondToInquiry,getAllInquiries,createInquiry,removeCard,getAllCartItems, getSoldDiamonds,AddToCart, loginUser, getUsers, uploads, forgotPassword, getSalesReport, getAllSuppliers, supplier, resetPassword, getAllPurchasedDiamonds, purchaseDiamond, sellDiamond } from "../Controllers/userController.js";
 import userAuth from "../Middlewares/auth.js";
+import path from "path";
+import { fileURLToPath } from 'url';
 
 const userRouter = express.Router();
+
+const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+app.use(express.static('public')); // Serve static files
+
+app.get('/diamond.glb', (req, res) => {
+  res.sendFile(path.join(__dirname, 'DiamondsModels/diamond.glb'));
+});
+
+app.listen(41455, () => {
+  console.log('Server is running on http://127.0.0.1:41455');
+});
 
 /**
  * @swagger
@@ -77,7 +93,13 @@ const userRouter = express.Router();
  *         description: User registered
  */
 userRouter.post('/register', registerUser);
-
+userRouter.post('/verifyUser', verifyUser,(req, res) => {
+  res.status(200).json({
+    message: "User verified successfully",
+    user: req.user
+  });
+});
+  
 /**
  * @swagger
  * /api/user/login:
@@ -343,6 +365,19 @@ userRouter.get('/getSalesReport', getSalesReport);
 
 userRouter.get("/cartDiamonds", getAllCartItems); 
 
+userRouter.get("/getAllCartItems", getSoldDiamonds);
+
 userRouter.delete("/cartDiamonds/:id", removeCard); 
 
+userRouter.post("/inquiry" ,verifyUser, createInquiry); 
+
+userRouter.post("/admin/inquiry/:id/respond", respondToInquiry); 
+
+userRouter.get("/admin/inquiries", getAllInquiries);
+
+userRouter.get('/generate-bill/:saleId', generateBill);
+
+
 export default userRouter;
+
+
