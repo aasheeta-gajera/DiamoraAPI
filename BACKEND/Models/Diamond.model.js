@@ -18,7 +18,7 @@ const diamondSchema = new mongoose.Schema({
   sellingPriceBTC: { type: Number },
   customerName: { type: String },
   saleDate: { type: Date },
-  paymentStatus: { type: String, enum: ["Pending", "Paid"], default: "Pending" },
+  paymentStatus: { type: String, enum: ["Pending", "Paid",'canceled'], default: "Pending" },
   status: { type: String, enum: ["In Stock", "Sold"], default: "In Stock" },
   totalSellingPriceUSD: { type: Number, default: 0 }, 
     totalSellingPriceBTC: { type: Number, default: 0 },

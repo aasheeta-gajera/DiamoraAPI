@@ -34,7 +34,7 @@
 
 
 import express from "express";
-import { registerUser,generateBill,verifyUser,respondToInquiry,getAllInquiries,createInquiry,removeCard,getAllCartItems, getSoldDiamonds,AddToCart, loginUser, getUsers, uploads, forgotPassword, getSalesReport, getAllSuppliers, supplier, resetPassword, getAllPurchasedDiamonds, purchaseDiamond, sellDiamond } from "../Controllers/userController.js";
+import { registerUser,generateBill,verifyUser,respondToInquiry,getAllInquiries,createInquiry,removeCart,getAllCartItems, getSoldDiamonds,AddToCart, loginUser, getUsers, uploads, forgotPassword, getSalesReport, getAllSuppliers, supplier, resetPassword, getAllPurchasedDiamonds, purchaseDiamond, sellDiamond } from "../Controllers/userController.js";
 import userAuth from "../Middlewares/auth.js";
 import path from "path";
 import { fileURLToPath } from 'url';
@@ -92,6 +92,7 @@ app.listen(41455, () => {
  *       200:
  *         description: User registered
  */
+
 userRouter.post('/register', registerUser);
 userRouter.post('/verifyUser', verifyUser,(req, res) => {
   res.status(200).json({
@@ -365,18 +366,17 @@ userRouter.get('/getSalesReport', getSalesReport);
 
 userRouter.get("/cartDiamonds", getAllCartItems); 
 
-userRouter.get("/getAllCartItems", getSoldDiamonds);
+userRouter.get("/getSoldDiamonds", getSoldDiamonds);
 
-userRouter.delete("/cartDiamonds/:id", removeCard); 
+userRouter.delete("/cartDiamonds/:id", removeCart); 
 
-userRouter.post("/inquiry" ,verifyUser, createInquiry); 
+userRouter.post("/inquiry" , createInquiry); 
 
 userRouter.post("/admin/inquiry/:id/respond", respondToInquiry); 
 
 userRouter.get("/admin/inquiries", getAllInquiries);
 
 userRouter.get('/generate-bill/:saleId', generateBill);
-
 
 export default userRouter;
 

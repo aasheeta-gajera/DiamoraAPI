@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const PurchaseDiamondSchema = new mongoose.Schema({
-    supplier: { type: String , ref: "Supplier" },
+    supplier: { type: String, required: true }, // Supplier name
     invoiceNumber: { type: String, required: true},
     supplierContact: { type: String }, // New field
     itemCode: { type: String, required: true, unique: true },
@@ -28,6 +28,11 @@ const PurchaseDiamondSchema = new mongoose.Schema({
     imageURL: { type: String }, // New field
     remarks: { type: String } ,// New field
     totalPurchasePrice: { type: Number }, // ✅ Add this field
+
+    paymentStatus: { type: String, enum: ['Pending', 'Completed', 'Failed'], required: true }, // payment status
+    paymentMethod: { type: String, enum: ['Credit Card', 'Debit Card', 'Cash', 'Bank Transfer'], required: false }, // payment method
+    transactionId: { type: String, required: false }, // transaction ID (if applicable)
+    paymentDate: { type: Date, default: Date.now }, // timestamp of the payment
 });
 
 // Auto-calculate cost per carat before saving
