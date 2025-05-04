@@ -368,7 +368,7 @@ userRouter.get("/cartDiamonds", getAllCartItems);
 
 userRouter.get("/getSoldDiamonds", getSoldDiamonds);
 
-userRouter.delete("/cartDiamonds/:id", removeCart); 
+userRouter.delete("/cartDiamonds/:diamondId", removeCart); 
 
 userRouter.post("/inquiry" , createInquiry); 
 

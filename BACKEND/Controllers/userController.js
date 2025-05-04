@@ -423,82 +423,93 @@ export const registerUser = async (req, res) => {
   //   }
   // };
 
-export const sellDiamond = async (req, res) => {
-  try {
-    const {
-      userId,
-      itemCode,
-      customerName,
-      quantity,
-      totlePrice,
-      paymentStatus,
-      paymentMethod,
-      transactionId,
-    } = req.body;
-
-    if (!userId || isNaN(totlePrice) || isNaN(quantity) || quantity <= 0 || totlePrice <= 0 || !paymentStatus) {
-      return res.status(400).json({ message: "Invalid input" });
-    }
-
-    const purchasedDiamond = await PurchaseDiamond.findOne({ itemCode });
-
-    if (!purchasedDiamond || purchasedDiamond.totalDiamonds < quantity) {
-      return res.status(404).json({ message: "Not enough stock" });
-    }
-
-    purchasedDiamond.totalDiamonds -= quantity;
-    purchasedDiamond.status = purchasedDiamond.totalDiamonds === 0 ? "Sold" : "In Stock";
-    await purchasedDiamond.save();
-
-    const purchaseCost = purchasedDiamond.purchasePrice * quantity;
-    const profitOrLossUSD = totlePrice - purchaseCost;
-
-    const existingSale = await Diamond.findOne({ itemCode });
-
-    if (existingSale) {
-      existingSale.quantity += quantity;
-      existingSale.totlePrice += totlePrice;
-      existingSale.profitOrLossUSD += profitOrLossUSD;
-      existingSale.paymentStatus = paymentStatus;
-      existingSale.paymentMethod = paymentMethod;
-      existingSale.transactionId = transactionId;
-      existingSale.saleDate = new Date(); // Update to most recent sale
-      await existingSale.save();
-    } else {
-      const newSale = new Diamond({
+  export const sellDiamond = async (req, res) => {
+    try {
+      const {
+        userId,
         itemCode,
-        shape: purchasedDiamond.shape,
-        size: purchasedDiamond.size,
-        color: purchasedDiamond.color,
-        clarity: purchasedDiamond.clarity,
-        cut: purchasedDiamond.cut,
-        polish: purchasedDiamond.polish,
-        symmetry: purchasedDiamond.symmetry,
-        fluorescence: purchasedDiamond.fluorescence,
-        certification: purchasedDiamond.certification,
-        measurements: purchasedDiamond.measurements,
-        tablePercentage: purchasedDiamond.tablePercentage,
-        purchasePrice: purchasedDiamond.purchasePrice,
-        totlePrice,
         customerName,
         quantity,
-        saleDate: new Date(),
         paymentStatus,
         paymentMethod,
         transactionId,
-        profitOrLossUSD,
+      } = req.body;
+  
+      // Validate inputs
+      if (!userId || isNaN(quantity) || quantity <= 0 || !paymentStatus) {
+        return res.status(400).json({ message: "Invalid input" });
+      }
+  
+      // Find the purchased diamond
+      const purchasedDiamond = await PurchaseDiamond.findOne({ itemCode });
+  
+      if (!purchasedDiamond || purchasedDiamond.totalDiamonds < quantity) {
+        return res.status(404).json({ message: "Not enough stock" });
+      }
+  
+      // Update stock
+      purchasedDiamond.totalDiamonds -= quantity;
+      purchasedDiamond.status = purchasedDiamond.totalDiamonds === 0 ? "Sold" : "In Stock";
+      await purchasedDiamond.save();
+  
+      // Calculate selling price with 15% profit
+      const purchaseCost = purchasedDiamond.purchasePrice * quantity;
+      const totlePrice = +(purchaseCost * 1.15).toFixed(2);  // 15% markup
+      const profitOrLossUSD = totlePrice - purchaseCost;
+  
+      // Check for existing sale entry
+      const existingSale = await Diamond.findOne({ itemCode });
+  
+      if (existingSale) {
+        existingSale.quantity += quantity;
+        existingSale.totlePrice += totlePrice;
+        existingSale.profitOrLossUSD += profitOrLossUSD;
+        existingSale.paymentStatus = paymentStatus;
+        existingSale.paymentMethod = paymentMethod;
+        existingSale.transactionId = transactionId;
+        existingSale.saleDate = new Date(); // Update to most recent sale
+        await existingSale.save();
+      } else {
+        const newSale = new Diamond({
+          itemCode,
+          shape: purchasedDiamond.shape,
+          size: purchasedDiamond.size,
+          color: purchasedDiamond.color,
+          clarity: purchasedDiamond.clarity,
+          cut: purchasedDiamond.cut,
+          polish: purchasedDiamond.polish,
+          symmetry: purchasedDiamond.symmetry,
+          fluorescence: purchasedDiamond.fluorescence,
+          certification: purchasedDiamond .certification,
+          measurements: purchasedDiamond.measurements,
+          tablePercentage: purchasedDiamond.tablePercentage,
+          // purchasePrice: purchasedDiamond.purchasePrice,
+          totlePrice,
+          customerName,
+          quantity,
+          saleDate: new Date(),
+          paymentStatus,
+          paymentMethod,
+          transactionId,
+          // profitOrLossUSD,
+        });
+  
+        await newSale.save();
+      }
+  
+      // Remove from cart
+      await Cart.deleteOne({ userId, itemCode });
+  
+      res.status(201).json({
+        message: "Diamond sold successfully!",
+        totlePrice,
+        profitOrLossUSD
       });
-
-      await newSale.save();
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error: " + error.message });
     }
-
-    await Cart.deleteOne({ userId, itemCode });
-
-    res.status(201).json({ message: "Diamond sold successfully!" });
-  } catch (error) {
-    res.status(500).json({ message: "Server error: " + error.message });
-  }
-};
+  };  
 
 export const getSoldDiamonds = async (req, res) => {
     try {
@@ -537,32 +548,88 @@ export const getSoldDiamonds = async (req, res) => {
     }
 };
 
-  
 export const getSalesReport = async (req, res) => {
-    try {
-        const sales = await Diamond.find();
+  try {
+      const sales = await Diamond.find();
 
-        let totalRevenueUSD = 0;
-        // let totalRevenueBTC = 0;
-        let totalProfitOrLossUSD = 0;
+      let totalRevenueUSD = 0;
+      let totalProfitOrLossUSD = 0;
+      let totalSalesCount = sales.length;
 
-        sales.forEach(sale => {
-            totalRevenueUSD += sale.totlePrice;
-            // totalRevenueBTC += sale.totalSellingPriceBTC;
-            totalProfitOrLossUSD += sale.profitOrLossUSD;
-        });
+      const shapeCountMap = {};         // shape -> total count
+      const shapeProfitMap = {};        // shape -> total profit
+      const shapeRevenueMap = {};       // shape -> total revenue
 
-        res.status(200).json({
-            totalRevenueUSD,
-            // totalRevenueBTC,
-            totalProfitOrLossUSD,
-            sales
-        });
+      sales.forEach(sale => {
+          const shape = sale.shape || "Unknown";
+          const revenue = sale.totlePrice || 0;
+          const profit = sale.profitOrLossUSD || 0;
 
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+          totalRevenueUSD += revenue;
+          totalProfitOrLossUSD += profit;
+
+          // Count sales per shape
+          shapeCountMap[shape] = (shapeCountMap[shape] || 0) + 1;
+
+          // Track total profit per shape
+          shapeProfitMap[shape] = (shapeProfitMap[shape] || 0) + profit;
+
+          // Track revenue per shape
+          shapeRevenueMap[shape] = (shapeRevenueMap[shape] || 0) + revenue;
+      });
+
+      // Prepare graph data
+      const graphLabels = Object.keys(shapeCountMap);
+      const shapeCountValues = Object.values(shapeCountMap);
+      const shapeProfitValues = graphLabels.map(label => shapeProfitMap[label]);
+
+      // Analytics
+      const sortedShapesBySales = Object.entries(shapeCountMap)
+          .sort((a, b) => b[1] - a[1]);
+
+      const mostProfitableShape = Object.entries(shapeProfitMap)
+          .sort((a, b) => b[1] - a[1])[0];
+
+      const lossMakingShapes = Object.entries(shapeProfitMap)
+          .filter(([_, profit]) => profit < 0)
+          .map(([shape]) => shape);
+
+      res.status(200).json({
+          totalSalesCount,
+          totalRevenueUSD,
+          totalProfitOrLossUSD,
+          averageProfitPerSale: totalSalesCount > 0 ? (totalProfitOrLossUSD / totalSalesCount).toFixed(2) : 0,
+
+          // By Shape
+          shapeAnalytics: {
+              salesCount: shapeCountMap,
+              revenueByShape: shapeRevenueMap,
+              profitByShape: shapeProfitMap,
+          },
+
+          insights: {
+              topSellingShapes: sortedShapesBySales,
+              mostProfitableShape: {
+                  shape: mostProfitableShape?.[0],
+                  profit: mostProfitableShape?.[1],
+              },
+              lossMakingShapes
+          },
+
+          graphData: {
+              labels: graphLabels,
+              salesCount: shapeCountValues,
+              profitByShape: shapeProfitValues,
+          },
+
+          sales
+      });
+
+  } catch (error) {
+      res.status(500).json({ message: error.message });
+  }
 };
+
 
 
 export const supplier = async (req, res) => {
