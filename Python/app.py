@@ -146,3 +146,4 @@ draw.text((1240, 1650), secret_code, font=font_secret, fill=(255, 255, 255), anc
 img.save(output_path)
 print(f"Certificate saved at: {output_path}")
 print(f"Secret Code: {secret_code}")  # Visible in runtime
+
