@@ -55,7 +55,7 @@ const swaggerSpec = swaggerJsdoc(options);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));  
 
 app.use('/diamora/api/Auth', userRouter)
-// app.use('/diamora/api/Admin', adminRouter)
+app.use('/diamora/api/Admin', adminRouter)
 app.use('/diamora/api/Customer', customerRouter)
 app.use('/diamora/api/Report', ReportRouter)
 

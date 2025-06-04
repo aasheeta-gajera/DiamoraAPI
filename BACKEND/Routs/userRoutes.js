@@ -20,7 +20,6 @@ app.listen(41455, () => {
 });
 
 userRouter.post('/register', registerUser);
-
 userRouter.post('/verifyUser', verifyUser,(req, res) => {
   res.status(200).json({
     message: "User verified successfully",

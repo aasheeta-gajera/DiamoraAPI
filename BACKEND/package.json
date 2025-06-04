@@ -4,8 +4,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "nodemon index.js"
   },
   "keywords": [],
   "author": "",
@@ -23,12 +22,10 @@
     "mongoose": "^8.10.0",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.10.0",
+    "nodemon": "^3.1.10",
     "pdfkit": "^0.17.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "tesseract.js": "^6.0.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.10"
   }
 }
