@@ -6,13 +6,8 @@ import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
 import path from 'path';
 import userRouter from './Routs/userRoutes.js'
-import adminRouter from './Routs/AdminRoutes.js'
-import customerRouter from './Routs/CustomerRoutes.js'
-import ReportRouter from './Routs/ReportsRouts.js';
 
-const PORT = process.env.PORT || 3000
-
-//ngrok http 5000
+const PORT = process.env.PORT || 4000
 
 const app = express()
 app.use(express.json({ limit: "50mb" })); 
@@ -48,16 +43,15 @@ const options = {
     apis: ['./Routs/userRoutes.js'],
   };
   
-const swaggerSpec = swaggerJsdoc(options);
+  const swaggerSpec = swaggerJsdoc(options);
   
-//https://api.diamora.com/api
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));  
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));  
+app.use('/api/user', userRouter)
 
-app.use('/diamora/api/Auth', userRouter)
-app.use('/diamora/api/Admin', adminRouter)
-app.use('/diamora/api/Customer', customerRouter)
-app.use('/diamora/api/Report', ReportRouter)
+app.get('/',(req,res)=>{
+    res.send("API Working")
+});
 
 app.use(cors());
 
@@ -67,4 +61,4 @@ app.listen(PORT , ()=>
 
 //Database :  Auth
 //username  : aiGenerateImages  
-//password : poiuytrewq
+//password : poiuytrewq 
