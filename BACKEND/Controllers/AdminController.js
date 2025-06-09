@@ -2,6 +2,9 @@ import PurchaseDiamond from "../Models/purchaseDiamond.model.js";
 import Diamond from "../Models/Diamond.model.js";
 import Supplier from "../Models/supplier.model.js";
 import Inquiry from "../Models/Inquiry.model.js";
+import Razorpay from "razorpay";
+import crypto from "crypto";
+
 
   const basePrices = {
     shape: {
@@ -65,13 +68,13 @@ import Inquiry from "../Models/Inquiry.model.js";
       // Convert size to number
       size = Number(size);
       if (isNaN(size)) {
-        return res.status(400).json({ message: "Size must be a number" });
+        return res.status(400).send({ message: "Size must be a number" });
       }
   
       // Check if supplier exists and get its ObjectId
       const existingSupplier = await Supplier.findOne({ name: supplier });
       if (!existingSupplier) {
-        return res.status(404).json({ message: "Supplier not found" });
+        return res.status(404).send({ message: "Supplier not found" });
       }
   
       // Calculate Price
@@ -115,10 +118,10 @@ import Inquiry from "../Models/Inquiry.model.js";
       });
   
       await newPurchase.save();
-      res.status(201).json({ message: "Diamond added to inventory!", purchase: newPurchase});
+      res.status(201).send({ message: "Diamond added to inventory!", purchase: newPurchase});
   
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      res.status(500).send({ message: error.message });
     }
   };
   
@@ -131,9 +134,9 @@ import Inquiry from "../Models/Inquiry.model.js";
         totalPurchasePrice: (diamond.purchasePrice || 0) * (diamond.totalDiamonds || 0),
       }));
   
-      res.status(200).json({ diamonds: diamondsWithTotalPrice });
+      res.status(200).send({ diamonds: diamondsWithTotalPrice });
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      res.status(500).send({ message: error.message });
     }
   };
 
@@ -143,7 +146,7 @@ import Inquiry from "../Models/Inquiry.model.js";
   
       const existingSupplier = await Supplier.findOne({ email });
       if (existingSupplier) {
-        return res.status(400).json({ message: "Supplier with this email already exists." });
+        return res.status(400).send({ message: "Supplier with this email already exists." });
       }
   
       // Create Supplier (No diamonds added)
@@ -157,18 +160,18 @@ import Inquiry from "../Models/Inquiry.model.js";
       });
   
       await newSupplier.save();
-      res.status(201).json({ message: "Supplier added successfully", supplier: newSupplier });
+      res.status(201).send({ message: "Supplier added successfully", supplier: newSupplier });
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      res.status(400).send({ error: error.message });
     }
   };
   
   export const getAllSuppliers = async (req, res) => {
     try {
       const suppliers = await Supplier.find();
-      res.status(200).json({ success: true, data: suppliers });
+      res.status(200).send({ success: true, data: suppliers });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).send({ success: false, error: error.message });
     }
   };
 
@@ -218,7 +221,7 @@ export const getSalesReport = async (req, res) => {
           .filter(([_, profit]) => profit < 0)
           .map(([shape]) => shape);
 
-      res.status(200).json({
+      res.status(200).send({
           totalSalesCount,
           totalRevenueUSD,
           totalProfitOrLossUSD,
@@ -250,7 +253,7 @@ export const getSalesReport = async (req, res) => {
       });
 
   } catch (error) {
-      res.status(500).json({ message: error.message });
+      res.status(500).send({ message: error.message });
   }
 };
 
@@ -281,18 +284,18 @@ export const createInquiry = async (req, res) => {
     });
 
     await inquiry.save();
-    res.status(201).json({ message: "Inquiry submitted", inquiry });
+    res.status(201).send({ message: "Inquiry submitted", inquiry });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).send({ error: err.message });
   }
 };
 
 export const getAllInquiries = async (req, res) => {
   try {
     const inquiries = await Inquiry.find();
-    res.json(inquiries);
+    res.send(inquiries);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).send({ error: err.message });
   }
 };
 
@@ -310,11 +313,11 @@ export const respondToInquiry = async (req, res) => {
       { new: true }
     );
 
-    if (!inquiry) return res.status(404).json({ message: "Inquiry not found" });
+    if (!inquiry) return res.status(404).send({ message: "Inquiry not found" });
 
-    res.json({ message: "Response sent", inquiry });
+    res.send({ message: "Response sent", inquiry });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).send({ error: err.message });
   }
 };
 
@@ -333,7 +336,7 @@ export const patchPurchasedDiamond = async (req, res) => {
     if (updateFields.size !== undefined) {
       updateFields.size = Number(updateFields.size);
       if (isNaN(updateFields.size)) {
-        return res.status(400).json({ message: "Size must be a number" });
+        return res.status(400).send({ message: "Size must be a number" });
       }
     }
 
@@ -341,7 +344,7 @@ export const patchPurchasedDiamond = async (req, res) => {
     if (updateFields.supplier) {
       const supplier = await Supplier.findOne({ name: updateFields.supplier });
       if (!supplier) {
-        return res.status(404).json({ message: "Supplier not found" });
+        return res.status(404).send({ message: "Supplier not found" });
       }
       updateFields.supplier = supplier._id;
     }
@@ -361,12 +364,12 @@ export const patchPurchasedDiamond = async (req, res) => {
     });
 
     if (!updatedDiamond) {
-      return res.status(404).json({ message: "Diamond not found" });
+      return res.status(404).send({ message: "Diamond not found" });
     }
 
-    res.status(200).json({ message: "Diamond updated successfully", diamond: updatedDiamond });
+    res.status(200).send({ message: "Diamond updated successfully", diamond: updatedDiamond });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).send({ message: error.message });
   }
 };
 
@@ -378,11 +381,52 @@ export const deletePurchasedDiamond = async (req, res) => {
     const deletedDiamond = await PurchaseDiamond.findByIdAndDelete(id);
 
     if (!deletedDiamond) {
-      return res.status(404).json({ message: "Diamond not found" });
+      return res.status(404).send({ message: "Diamond not found" });
     }
 
-    res.status(200).json({ message: "Diamond deleted successfully" });
+    res.status(200).send({ message: "Diamond deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).send({ message: error.message });
   }
 };
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
+export const Payment = async (req, res) => {
+  const { amount, currency } = req.body;
+
+  const options = {
+    amount: amount * 100, // amount in smallest currency unit
+    currency,
+    receipt: `rcptid_${Date.now()}`,
+  };
+
+  try {
+    const order = await razorpay.orders.create(options);
+    res.send(order);
+  } catch (err) {
+    res.status(500).send({ error: err.message });
+  }
+};
+
+export const verifyPayment = async (req, res) => {
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+  const body = razorpay_order_id + "|" + razorpay_payment_id;
+
+  const expectedSignature = crypto
+    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+    .update(body.toString())
+    .digest("hex");
+
+  if (expectedSignature === razorpay_signature) {
+    res.send({ message: "Payment verified successfully" });
+  } else {
+    res.status(400).send({ message: "Invalid signature" });
+  }
+};
+
+

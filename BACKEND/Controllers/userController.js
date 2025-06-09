@@ -23,18 +23,18 @@ export const registerUser = async (req, res) => {
        } = req.body;
   
       const existingUser = await User.findOne({ email });
-      if (existingUser) return res.status(400).json({ message: "User already exists" });
+      if (existingUser) return res.status(400).send({ message: "User already exists" });
 
       const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
       if (!passwordRegex.test(password)) {
-        return res.status(400).json({
+        return res.status(400).send({
           status: "error",
           message: "Password must be at least 8 characters long, include one uppercase letter, one number, and one special character.",
         });
       }
   
       if (!id_proof) {
-        return res.status(400).json({
+        return res.status(400).send({
           status: "error",
           message: "Photo (Base64) is required.",
         });
@@ -90,14 +90,14 @@ export const registerUser = async (req, res) => {
         SECRET_KEY,
       );
   
-      res.status(201).json({ 
+      res.status(201).send({ 
         message: "User registered successfully!", 
         token, 
         user:savedUser
       });
   
     } catch (error) {
-      res.status(500).json({ message: error.message +'Error' });
+      res.status(500).send({ message: error.message +'Error' });
     }
 };
 
@@ -156,14 +156,14 @@ export const registerUser = async (req, res) => {
       );
   
       // Send response with full user data
-      res.status(200).json({
+      res.status(200).send({
         message: "Login successful!",
         token,
         user
       });
   
     } catch (error) {
-      res.status(500).json({ message: error.message + " Error" });
+      res.status(500).send({ message: error.message + " Error" });
     }
   };
   
@@ -174,7 +174,7 @@ export const registerUser = async (req, res) => {
   
       // Check if user exists
       const user = await User.findOne({ email });
-      if (!user) return res.status(400).json({ message: "User not found" });
+      if (!user) return res.status(400).send({ message: "User not found" });
   
       // Generate password reset token (valid for 10 mins)
       const resetToken = jwt.sign({ email }, SECRET_KEY, { expiresIn: "10m" });
@@ -182,27 +182,27 @@ export const registerUser = async (req, res) => {
       // In a real app, send this token via email (Nodemailer)
       // Example: sendEmail(user.email, `Your reset token: ${resetToken}`);
   
-      res.status(200).json({ 
+      res.status(200).send({ 
         message: "Password reset token sent to email.",
         resetToken // In real use case, don't return this in response
       });
   
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      res.status(500).send({ message: error.message });
     }
   };
   
 
-    export const resetPassword = async (req, res) => {
+export const resetPassword = async (req, res) => {
       try {
         const { token, newPassword } = req.body;
     
         const decoded = jwt.verify(token, SECRET_KEY);
-        if (!decoded) return res.status(400).json({ message: "Invalid or expired token" });
+        if (!decoded) return res.status(400).send({ message: "Invalid or expired token" });
     
         // Find user by email in decoded token
         const user = await User.findOne({ email: decoded.email });
-        if (!user) return res.status(400).json({ message: "User not found" });
+        if (!user) return res.status(400).send({ message: "User not found" });
     
         // Hash new password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -211,10 +211,10 @@ export const registerUser = async (req, res) => {
         user.password = hashedPassword;
         await user.save();
     
-        res.status(200).json({ message: "Password reset successful. You can now log in." });
+        res.status(200).send({ message: "Password reset successful. You can now log in." });
     
       } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).send({ message: error.message });
       }
     };
 
@@ -232,7 +232,7 @@ export const upload = multer({ storage: storage }).single('certificate');
 export const uploadCertificate = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ message: 'No certificate file uploaded.' });
+      return res.status(400).send({ message: 'No certificate file uploaded.' });
     }
 
     const imagePath = req.file.path;
@@ -249,9 +249,9 @@ export const uploadCertificate = async (req, res) => {
                           extractedText.includes('Daimora');
 
     // Send response based on whether it is a partnership certificate
-    res.json({ isPartnershipCertificate: isPartnership });
+    res.send({ isPartnershipCertificate: isPartnership });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Error processing certificate' });
+    res.status(500).send({ message: 'Error processing certificate' });
   }
 };

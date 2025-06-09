@@ -36,7 +36,7 @@ export const getOverallAnalytics = async (req, res) => {
         const mostProfitableShape = Object.entries(shapeProfitMap).sort((a, b) => b[1] - a[1])[0];
         const worstSellingShape = Object.entries(shapeCountMap).sort((a, b) => a[1] - b[1])[0];
 
-        res.status(200).json({
+        res.status(200).send({
             totalSalesCount,
             totalRevenue,
             totalProfit,
@@ -59,7 +59,7 @@ export const getOverallAnalytics = async (req, res) => {
 
     } catch (error) {
         console.error("Analytics Error:", error);
-        res.status(500).json({ message: error.message });
+        res.status(500).send({ message: error.message });
     }
 };
 
@@ -81,14 +81,14 @@ export const getTimeBasedSales = async (req, res) => {
             monthlySales[month] = (monthlySales[month] || 0) + sale.purchasePrice;
         });
 
-        res.status(200).json({
+        res.status(200).send({
             dailySales,
             weeklySales,
             monthlySales
         });
 
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).send({ message: error.message });
     }
 };
 
@@ -114,7 +114,7 @@ export const getCustomerAnalytics = async (req, res) => {
         const repeatCustomers = Object.values(customerOrderMap).filter(count => count > 1).length;
         const oneTimeCustomers = totalCustomers - repeatCustomers;
 
-        res.status(200).json({
+        res.status(200).send({
             totalCustomers,
             averageOrdersPerCustomer: averageOrders,
             highValueCustomers,
@@ -123,7 +123,7 @@ export const getCustomerAnalytics = async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).send({ message: error.message });
     }
 };
 
@@ -139,7 +139,7 @@ export const getInventoryAnalytics = async (req, res) => {
             .slice(0, 5) // fallback (no soldCount available)
             .map(item => ({ name: item.itemCode, soldCount: 0 }));
 
-        res.status(200).json({
+        res.status(200).send({
             totalInventory: inventory.length,
             inStock,
             outOfStock,
@@ -148,7 +148,7 @@ export const getInventoryAnalytics = async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).send({ message: error.message });
     }
 };
 
@@ -174,18 +174,18 @@ export const getProfitMarginAnalytics = async (req, res) => {
             averageMarginByShape[shape] = avg.toFixed(2);
         });
 
-        res.status(200).json({
+        res.status(200).send({
             averageMarginByShape
         });
 
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).send({ message: error.message });
     }
 };
 
 export const getAbandonedCartsAnalytics = async (req, res) => {
     try {
-        const carts = await Cart.find({ status: "abandoned" });
+        const carts = await Cart.send({ status: "abandoned" });
 
         let totalAbandonedValue = 0;
         const productCountMap = {};
@@ -201,14 +201,14 @@ export const getAbandonedCartsAnalytics = async (req, res) => {
             .slice(0, 5)
             .map(([itemCode, count]) => ({ itemCode, count }));
 
-        res.status(200).json({
+        res.status(200).send({
             abandonedCartCount: carts.length,
             totalAbandonedValue,
             topAbandonedProducts
         });
 
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).send({ message: error.message });
     }
 };
 
@@ -252,7 +252,7 @@ export const getSearchAnalytics = async (req, res) => {
             .slice(0, 5)
             .map(([filter, count]) => ({ filter, count }));
 
-        res.status(200).json({
+        res.status(200).send({
             totalSearches: searches.length,
             topSearchedShapes,
             noResultSearches,
@@ -261,7 +261,7 @@ export const getSearchAnalytics = async (req, res) => {
 
     } catch (error) {
         console.error("Search Analytics Error:", error);
-        res.status(500).json({ message: error.message });
+        res.status(500).send({ message: error.message });
     }
 };
 
@@ -290,7 +290,7 @@ export const getSearchAnalytics = async (req, res) => {
 //             methodMap[p.method] = (methodMap[p.method] || 0) + p.amount;
 //         });
 
-//         res.status(200).json({
+//         res.status(200).send({
 //             totalByMethod: methodMap,
 //             failedPayments: failedCount,
 //             refunds: {
@@ -300,6 +300,6 @@ export const getSearchAnalytics = async (req, res) => {
 //         });
 
 //     } catch (error) {
-//         res.status(500).json({ message: error.message });
+//         res.status(500).send({ message: error.message });
 //     }
 // };
